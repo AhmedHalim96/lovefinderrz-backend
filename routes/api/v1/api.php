@@ -23,8 +23,10 @@ use Illuminate\Support\Facades\Route;
 // Users Routes
 Route::prefix('v1/user')->group(function () {
   Route::post('/login', 'api\v1\LoginController@login');
+  Route::post('/register', 'api\v1\RegisterController@register');
 
   Route::get('/all', function () {
+    // TODO: Add Protected Routes Here
     return User::all();
   })->middleware('auth:api');
 });
