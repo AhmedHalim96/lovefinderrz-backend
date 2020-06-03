@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Validator;
 
 class RegisterController extends Controller {
   public function register(Request $request) {
-    // TODO: Add Avatar validation and logic
     $validator = Validator::make($request->all(), [
       'name' => 'required|string|max:20',
       'email' => 'required|string|unique:users',
@@ -19,7 +18,19 @@ class RegisterController extends Controller {
     ]);
 
     if ($validator->fails()) {
-      return response()->json([$validator->messages()], 403);
+      return response()->json($validator->messages(), 400);
+    }
+
+    // checking if avatar is set
+
+    if ($img = $request->file('avatar')) {
+      $filename = time() . "_" . $img->getClientOriginalName();
+      $filename = str_replace(' ', '-', $filename);
+      if (!($img->storeAs('public/avatars', $filename))) {
+        return response()->json(["message" => "Internal Server Error!"], 500);
+      }
+    } else {
+      $filename = 'no-avatar.jpeg';
     }
 
     // Adding new User
@@ -27,16 +38,14 @@ class RegisterController extends Controller {
     $user->name = $request->name;
     $user->email = $request->email;
     $user->password = Hash::make($request->password);
-    $user->avatar = null;
+    $user->avatar = $filename;
     if (!$user->save()) {
       return response()->json([
         'message' => 'Server Error! Try Again Later',
-        'status_code' => 500,
       ], 500);
     } else {
       return response()->json([
         'message' => 'You were successfully registered!',
-        'status_code' => 200,
       ], 200);
     }
   }

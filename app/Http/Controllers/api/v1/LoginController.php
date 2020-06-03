@@ -15,17 +15,16 @@ class LoginController extends Controller {
       'password' => 'required|string',
     ]);
     if (!Auth::attempt($login)) {
-      return response([
+      return response()->json([
         'message' => 'Email or Password are not correct!',
-        'status_code' => 401,
-      ]);
+      ], 401);
     }
 
     $user = Auth::user();
 
     // Creating a token without scopes...
     $token = $user->createToken('authToken')->accessToken;
-    $response = response(['user' => Auth::user(), 'access_token' => $token]);
+    $response = response()->json(['user' => Auth::user(), 'access_token' => $token], 200);
 
     return $response;
 
