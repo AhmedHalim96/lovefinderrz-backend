@@ -5,28 +5,29 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\RouteGroup;
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| is assigned the "api" middleware group. Enjoy building your API!
-|
- */
+Route::prefix('v1')->group(function () {
 
-// Route::middleware('auth:api')->get('/user', function (Request $request) {
-//     return $request->user();
-// });
+    // User routes
+    Route::prefix('user')->group(function () {
+        Route::post('/login', 'api\v1\LoginController@login');
+        Route::post('/register', 'api\v1\RegisterController@register');
 
-// Users Routes
-Route::prefix('v1/user')->group(function () {
-  Route::post('/login', 'api\v1\LoginController@login');
-  Route::post('/register', 'api\v1\RegisterController@register');
+    });
 
-  Route::get('/all', function () {
-    // TODO: Add Protected Routes Here
-    return User::all();
-  })->middleware('auth:api');
+    Route::group(["middleware" => 'auth:api'], function () {
+        // Chat Routes
+        Route::group(["prefix" => "chat"], function () {
+            Route::post('/', 'api\v1\ChatController@index');
+            Route::get('/{id}', 'api\v1\ChatController@show');
+            Route::post('/create', 'api\v1\ChatController@store');
+            Route::put('/{id}/update', 'api\v1\ChatController@update');
+            Route::delete('/{id}/delete', 'api\v1\ChatController@destroy');
+        });
+
+        Route::group(['prefix' => "message"], function () {
+            Route::post('/create', 'api\v1\MessageController@store');
+            Route::put('/{id}/update', 'api\v1\MessageController@update');
+            Route::delete('/{id}/delete', 'api\v1\MessageController@destroy');
+        });
+    });
 });
