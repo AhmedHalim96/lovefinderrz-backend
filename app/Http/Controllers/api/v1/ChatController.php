@@ -6,6 +6,7 @@ use App\Chat;
 use App\Http\Controllers\Controller;
 use App\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ChatController extends Controller
 {
@@ -13,18 +14,14 @@ class ChatController extends Controller
      * Display a listing of the resource.
      *
      *
-     * @param \Illuminate\Http\Request $request
+     *
      * @return \Illuminate\Http\Response with all user chats with first message of each chat
      *
      */
-    public function index(Request $request)
+    public function index()
     {
-
-        $chats = User::find($request->user_id)
-            ->first()
-            ->chats;
-
-
+        $user = Auth::user();
+        $chats = $user->chats;
         return response()->json($chats, 200);
 
     }

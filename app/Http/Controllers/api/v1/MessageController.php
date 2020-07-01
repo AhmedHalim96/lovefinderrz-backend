@@ -5,6 +5,7 @@ namespace App\Http\Controllers\api\v1;
 use App\Http\Controllers\Controller;
 use App\Message;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class MessageController extends Controller
 {
@@ -20,9 +21,10 @@ class MessageController extends Controller
     {
         $message = new Message();
         $message->chat_id = $request->chat_id;
-        $message->user_id = $request->user_id;
+        $message->user_id = Auth::id();
         $message->body = $request->body;
         if ($message->save()) {
+            $message['user'] = Auth::user();
             return response()->json($message, 200);
         }
         return response()->json(["message" => "Something wrong happend!, Try again later"], 500);
@@ -35,6 +37,12 @@ class MessageController extends Controller
      * @param int $id
      * @return \Illuminate\Http\Response
      */
+
+    public function show($id)
+    {
+        $message = Message::find($id);
+        return response()->json($message->user);
+    }
 
     /**
      * Update the specified resource in storage.

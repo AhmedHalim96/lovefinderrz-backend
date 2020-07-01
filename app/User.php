@@ -5,6 +5,7 @@ namespace App;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Auth;
 use Laravel\Passport\HasApiTokens;
 
 class User extends Authenticatable
@@ -26,7 +27,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $hidden = [
-        'password', 'remember_token',
+        'password', 'remember_token', 'pivot'
     ];
 
     /**
@@ -43,10 +44,14 @@ class User extends Authenticatable
         return $this->belongsToMany(Chat::class)->with(
             [
                 'messages' => function ($query) {
-                    return $query->latest()->first();
+                    return $query->latest()->take(50)->with([
+                        'user' => function ($query) {
+                            return $query->get();
+                        }
+                    ]);
                 },
                 'users' => function ($query) {
-                    return $query->get();
+                    return $query->where('user_id', '!=', Auth::id())->get();
                 },
             ]
         );

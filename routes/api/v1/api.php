@@ -17,15 +17,16 @@ Route::prefix('v1')->group(function () {
     Route::group(["middleware" => 'auth:api'], function () {
         // Chat Routes
         Route::group(["prefix" => "chat"], function () {
-            Route::post('/', 'api\v1\ChatController@index');
+            Route::get('/', 'api\v1\ChatController@index');
             Route::get('/{id}', 'api\v1\ChatController@show');
-            Route::post('/create', 'api\v1\ChatController@store');
+            Route::post('/', 'api\v1\ChatController@store');
             Route::put('/{id}/update', 'api\v1\ChatController@update');
             Route::delete('/{id}/delete', 'api\v1\ChatController@destroy');
         });
 
         Route::group(['prefix' => "message"], function () {
-            Route::post('/create', 'api\v1\MessageController@store');
+            Route::post('/', 'api\v1\MessageController@store');
+            Route::get('/{id}', 'api\v1\MessageController@show');
             Route::put('/{id}/update', 'api\v1\MessageController@update');
             Route::delete('/{id}/delete', 'api\v1\MessageController@destroy');
         });
