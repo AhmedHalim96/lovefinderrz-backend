@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\api\v1;
 
+use App\Events\NewMessage;
 use App\Http\Controllers\Controller;
 use App\Message;
+use http\Env\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -15,7 +17,7 @@ class MessageController extends Controller
      * Store a newly created resource in storage.
      *
      * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function store(Request $request)
     {
@@ -25,9 +27,11 @@ class MessageController extends Controller
         $message->body = $request->body;
         if ($message->save()) {
             $message['user'] = Auth::user();
-            return response()->json($message, 200);
+             broadcast(new NewMessage($request->chat_id, $message, Auth::user()))->toOthers();
+             return response()->json([], 200);
+//            return response()->json($message, 200);
         }
-        return response()->json(["message" => "Something wrong happend!, Try again later"], 500);
+        return response()->json(["message" => "Something wrong happened!, Try again later"], 500);
 
     }
 
@@ -35,7 +39,7 @@ class MessageController extends Controller
      * Display the specified resource.
      *
      * @param int $id
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
 
     public function show($id)
@@ -49,7 +53,7 @@ class MessageController extends Controller
      *
      * @param \Illuminate\Http\Request $request
      * @param int $id
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function update(Request $request, $id)
     {
@@ -58,7 +62,7 @@ class MessageController extends Controller
         if ($message->save()) {
             return response()->json($message, 200);
         }
-        return response()->json(["message" => "Something wrong happend!, Try again later"], 500);
+        return response()->json(["message" => "Something wrong happened!, Try again later"], 500);
 
     }
 
@@ -66,7 +70,7 @@ class MessageController extends Controller
      * Remove the specified resource from storage.
      *
      * @param int $id
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function destroy($id)
     {
