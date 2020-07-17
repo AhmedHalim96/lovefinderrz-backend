@@ -15,7 +15,7 @@ class ChatController extends Controller
      *
      *
      *
-     * @return \Illuminate\Http\Response with all user chats with first message of each chat
+     * @return \Illuminate\Http\JsonResponse with all user chats with first message of each chat
      *
      */
     public function index()
@@ -31,14 +31,14 @@ class ChatController extends Controller
      * Store a newly created resource in storage.
      *
      * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function store(Request $request)
     {
 
         $chat = new Chat();
         $chat->save();
-        if ($this->update($request, $chat->id)) {
+        if ($this->update(Auth::id(), $chat->id)&& $this->update($request->user_id, $chat->id)) {
 
             return response()->json(["message" => 'Chat Created Successfully'], 200);
         }
@@ -48,7 +48,7 @@ class ChatController extends Controller
      * Display the specified resource.
      *
      * @param int $id
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function show($id)
     {
@@ -62,19 +62,16 @@ class ChatController extends Controller
      *
      * @param \Illuminate\Http\Request $request
      * @param int $chat_id
-     * @return \Illuminate\Http\Response
+//     * @return
      */
-    public function update(Request $request, $chat_id)
+    public function update($user_id, $chat_id)
     {
         $chat = Chat::find($chat_id);
-        $users = json_decode($request->users);
-        foreach ($users as $id) {
-            User::where("id", $id)
+
+            User::where("id", $user_id)
                 ->first()
                 ->chats()
                 ->attach($chat);
-        }
-        return true;
 
     }
 

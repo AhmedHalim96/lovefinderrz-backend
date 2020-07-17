@@ -11,6 +11,7 @@ Route::prefix('v1')->group(function () {
     Route::prefix('user')->group(function () {
         Route::post('/login', 'api\v1\LoginController@login');
         Route::post('/register', 'api\v1\RegisterController@register');
+        Route::get('/{email}', 'api\v1\UserController@show')->middleware('auth:api');
 
     });
 
