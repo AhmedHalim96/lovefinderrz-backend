@@ -6,7 +6,7 @@ use App\Chat;
 use App\Http\Controllers\Controller;
 use App\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Auth;
 
 class ChatController extends Controller
 {
@@ -35,13 +35,13 @@ class ChatController extends Controller
      */
     public function store(Request $request)
     {
-
         $chat = new Chat();
         $chat->save();
-        if ($this->update(Auth::id(), $chat->id)&& $this->update($request->user_id, $chat->id)) {
-
-            return response()->json(["message" => 'Chat Created Successfully'], 200);
-        }
+        $chat->users()->attach(User::find(Auth::id()));
+        $chat->users()->attach(User::find($request->user_id));
+        $chat['messages'] = $chat->messages;
+        $chat['users'] = $chat->users()->where('user_id', '!=', Auth::id())->get();
+        return response()->json($chat, 200);
     }
 
     /**
@@ -79,7 +79,7 @@ class ChatController extends Controller
      * Remove the specified resource from storage.
      *
      * @param int $id
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function destroy($id)
     {

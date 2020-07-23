@@ -2,6 +2,7 @@
 
 namespace App;
 
+use Auth;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -30,11 +31,11 @@ class Chat extends Model
 
     public function messages()
     {
-        return $this->hasMany('App\Message')->latest();
+        return $this->hasMany('App\Message')->latest()->take(50)->with('user');
     }
 
     public function users()
     {
-        return $this->belongsToMany('App\User');
+        return $this->belongsToMany(User::class)->where('user_id', '!=', Auth::id());
     }
 }

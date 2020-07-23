@@ -75,20 +75,7 @@ class User extends Authenticatable
 
     public function chats()
     {
-        return $this->belongsToMany(Chat::class)->with(
-            [
-                'messages' => function ($query) {
-                    return $query->latest()->take(50)->with([
-                        'user' => function ($query) {
-                            return $query->get();
-                        }
-                    ]);
-                },
-                'users' => function ($query) {
-                    return $query->where('user_id', '!=', Auth::id())->get();
-                },
-            ]
-        );
+        return $this->belongsToMany(Chat::class)->with( ['messages', 'users']);
     }
 
 }
