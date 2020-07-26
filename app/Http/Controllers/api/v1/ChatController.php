@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\api\v1;
 
 use App\Chat;
+use App\Events\NewChat;
 use App\Http\Controllers\Controller;
+use App\Message;
 use App\User;
 use Illuminate\Http\Request;
 use Auth;
@@ -39,8 +41,18 @@ class ChatController extends Controller
         $chat->save();
         $chat->users()->attach(User::find(Auth::id()));
         $chat->users()->attach(User::find($request->user_id));
+
+//        Creating The First Message
+        $message = new Message();
+        $message->user_id = Auth::id();
+        $message->body = $request->message;
+        $message->chat_id = $chat->id;
+        $message->save();
+
         $chat['messages'] = $chat->messages;
-        $chat['users'] = $chat->users()->where('user_id', '!=', Auth::id())->get();
+        $chat['users'] = $chat->users;
+
+        broadcast(new NewChat($chat, $chat->users))->toOthers();
         return response()->json($chat, 200);
     }
 

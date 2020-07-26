@@ -29,7 +29,6 @@ class MessageController extends Controller
             $message['user'] = Auth::user();
              broadcast(new NewMessage($request->chat_id, $message, Auth::user()))->toOthers();
              return response()->json([], 200);
-//            return response()->json($message, 200);
         }
         return response()->json(["message" => "Something wrong happened!, Try again later"], 500);
 
