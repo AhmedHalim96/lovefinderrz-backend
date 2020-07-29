@@ -41,6 +41,10 @@ use Laravel\Passport\HasApiTokens;
  * @method static \Illuminate\Database\Eloquent\Builder|\App\User whereRememberToken($value)
  * @method static \Illuminate\Database\Eloquent\Builder|\App\User whereUpdatedAt($value)
  * @mixin \Eloquent
+ * @property string $status
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Contact[] $contacts
+ * @property-read int|null $contacts_count
+ * @method static \Illuminate\Database\Eloquent\Builder|\App\User whereStatus($value)
  */
 class User extends Authenticatable
 {
@@ -77,5 +81,22 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Chat::class)->with( ['messages', 'users']);
     }
+
+    public function contacts()
+    {
+        return $this->belongsToMany(User::class, 'contact_user', 'user_id', 'contact_id');
+    }
+
+
+    public function addFriend(User $user)
+    {
+        $this->contacts()->attach($user->id);
+    }
+
+    public function removeFriend(User $user)
+    {
+        $this->contacts()->detach($user->id);
+    }
+
 
 }
