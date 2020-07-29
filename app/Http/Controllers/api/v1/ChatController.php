@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api\v1;
 
 use App\Chat;
+use App\Contact;
 use App\Events\NewChat;
 use App\Http\Controllers\Controller;
 use App\Message;
@@ -37,12 +38,19 @@ class ChatController extends Controller
      */
     public function store(Request $request)
     {
+        // Add to Contacts Contacts
+        $user1 =User::find(Auth::id());
+        $user2= User::find($request->user_id);
+        $user1->addFriend($user2);
+        $user2->addFriend($user1);
+
+        // Creating New Chat
         $chat = new Chat();
         $chat->save();
         $chat->users()->attach(User::find(Auth::id()));
         $chat->users()->attach(User::find($request->user_id));
 
-//        Creating The First Message
+        //Creating The First Message
         $message = new Message();
         $message->user_id = Auth::id();
         $message->body = $request->message;

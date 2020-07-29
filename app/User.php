@@ -80,4 +80,21 @@ class User extends Authenticatable
         return $this->belongsToMany(Chat::class)->with( ['messages', 'users']);
     }
 
+    public function contacts()
+    {
+        return $this->belongsToMany(User::class, 'contact_user', 'user_id', 'contact_id');
+    }
+
+
+    public function addFriend(User $user)
+    {
+        $this->contacts()->attach($user->id);
+    }
+
+    public function removeFriend(User $user)
+    {
+        $this->contacts()->detach($user->id);
+    }
+
+
 }
