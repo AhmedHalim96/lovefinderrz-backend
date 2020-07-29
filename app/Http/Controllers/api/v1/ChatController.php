@@ -68,7 +68,6 @@ class ChatController extends Controller
         return response()->json(["messages" => $Chat->messages, "users" => $Chat->users], 200);
     }
 
-
     /**
      * Update the specified resource in storage.
      *

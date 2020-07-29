@@ -23,5 +23,12 @@ class SeedUserTable extends Seeder {
     $user2->email = 'ahmeds@email.com';
     $user2->password = \Hash::make('secret');
     $user2->save();
+
+      $user2 = new User();
+      $user2->name = 'Ahmed Fahmy';
+      $user2->avatar = 'no-avatar.jpeg';
+      $user2->email = 'ahmedf@email.com';
+      $user2->password = \Hash::make('secret');
+      $user2->save();
   }
 }
