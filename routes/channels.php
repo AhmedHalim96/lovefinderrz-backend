@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Broadcast;
+use App\Chat;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,7 +17,10 @@ use Illuminate\Support\Facades\Broadcast;
 Broadcast::channel('App.User.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
 });
-Broadcast::channel('chat', function () {
+Broadcast::channel('chat.{id}', function ($user, $chatId) {
+    $chat = Chat::find($chatId);
 
-    return Auth::user();
+   if ($chat->users->contains($user)) {
+        return $user;
+    }
 });

@@ -12,8 +12,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/login', 'api\v1\LoginController@login');
         Route::post('/register', 'api\v1\RegisterController@register');
         Route::get('/{email}', 'api\v1\UserController@show')->middleware('auth:api');
-        Route::put('/{id}/online', 'api\v1\UserOnlineController')->middleware('auth:api');
-        Route::put('/{id}/offline', 'api\v1\UserOfflineController')->middleware('auth:api');
+        Route::put('/online', 'api\v1\UserOnlineController')->middleware('auth:api');
+        Route::put('/offline', 'api\v1\UserOfflineController')->middleware('auth:api');
     });
 
     Route::group(["middleware" => 'auth:api'], function () {
