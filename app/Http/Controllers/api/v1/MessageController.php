@@ -25,9 +25,9 @@ class MessageController extends Controller
         $message->chat_id = $request->chat_id;
         $message->user_id = Auth::id();
         $message->body = $request->body;
+        $message = $message->load('user');
         if ($message->save()) {
-            $message['user'] = Auth::user();
-             broadcast(new NewMessage($request->chat_id, $message, Auth::user()))->toOthers();
+             broadcast(new NewMessage($request->chat_id, $message))->toOthers();
 
              return response()->json($message, 200);
         }

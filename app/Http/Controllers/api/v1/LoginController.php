@@ -24,9 +24,8 @@ class LoginController extends Controller {
 
     // Creating a token without scopes...
     $token = $user->createToken('authToken')->accessToken;
-    $user = User::find(Auth::id());
-    $user['contacts']=$user->contacts;
-    $response = response()->json(['user' => $user,'access_token' => $token], 200);
+
+    $response = response()->json(['user' => auth()->user()->load('contacts'),'access_token' => $token], 200);
 
     return $response;
 

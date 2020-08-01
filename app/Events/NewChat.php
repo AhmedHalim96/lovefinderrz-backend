@@ -22,10 +22,9 @@ class NewChat implements  ShouldBroadcast
      *
      * @param $new_chat
      */
-    public function __construct($new_chat, $users, $user_id)
+    public function __construct($new_chat, $user_id)
     {
-        $this->new_chat = $new_chat;
-        $new_chat['users'] = $users;
+        $this->new_chat = $new_chat->load('users');
         $this->user_id = $user_id;
     }
 

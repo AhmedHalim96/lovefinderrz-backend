@@ -57,10 +57,8 @@ class ChatController extends Controller
         $message->chat_id = $chat->id;
         $message->save();
 
-        $chat['messages'] = $chat->messages;
-        $chat['users'] = $chat->users;
-
-        broadcast(new NewChat($chat, $chat->users, $request->user_id))->toOthers();
+        $chat = $chat->load(['messages', 'users']);
+        broadcast(new NewChat($chat, $request->user_id))->toOthers();
         return response()->json($chat, 200);
     }
 
@@ -72,8 +70,8 @@ class ChatController extends Controller
      */
     public function show($id)
     {
-        $Chat = Chat::find($id)->first();
-        return response()->json(["messages" => $Chat->messages, "users" => $Chat->users], 200);
+        $chat = Chat::find($id)->first();
+        return response()->json($chat->load(['messages', 'users']), 200);
     }
 
     /**
