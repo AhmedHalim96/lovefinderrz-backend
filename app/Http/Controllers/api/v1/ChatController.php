@@ -60,7 +60,7 @@ class ChatController extends Controller
         $chat['messages'] = $chat->messages;
         $chat['users'] = $chat->users;
 
-        broadcast(new NewChat($chat, $chat->users))->toOthers();
+        broadcast(new NewChat($chat, $chat->users, $request->user_id))->toOthers();
         return response()->json($chat, 200);
     }
 

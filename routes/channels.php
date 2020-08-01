@@ -24,3 +24,6 @@ Broadcast::channel('chat.{id}', function ($user, $chatId) {
         return $user;
     }
 });
+Broadcast::channel('newChat.{user_id}', function ($user, $user_id) {
+    return $user->id == $user_id;
+});
