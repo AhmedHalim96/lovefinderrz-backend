@@ -43,6 +43,8 @@ use Laravel\Passport\HasApiTokens;
  * @mixin \Eloquent
  * @property string $status
  * @method static \Illuminate\Database\Eloquent\Builder|\App\User whereStatus($value)
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\User[] $contacts
+ * @property-read int|null $contacts_count
  */
 class User extends Authenticatable
 {
@@ -56,6 +58,11 @@ class User extends Authenticatable
     protected $fillable = [
         'name', 'email', 'password', 'avatar',
     ];
+
+    protected $attributes = [
+        'status' => 'online'
+    ];
+
 
     /**
      * The attributes that should be hidden for arrays.

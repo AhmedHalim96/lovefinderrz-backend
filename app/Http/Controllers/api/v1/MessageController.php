@@ -79,4 +79,22 @@ class MessageController extends Controller
         }
         return response()->json(["message" => "Something wrong happend!, Try again later"], 500);
     }
+
+
+
+    /**
+     * Changes message status to read
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function messageRead($id)
+    {
+        $message = Message::find($id);
+        $message->status = 'read';
+        if ($message->save()) {
+            return response()->json($id, 200);
+        }
+        return response()->json(["message" => "Something wrong happend!, Try again later"], 500);
+    }
 }
