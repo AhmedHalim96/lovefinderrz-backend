@@ -1,0 +1,272 @@
+Index: app/User.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?php\n\nnamespace App;\n\nuse Illuminate\\Contracts\\Auth\\MustVerifyEmail;\nuse Illuminate\\Foundation\\Auth\\User as Authenticatable;\nuse Illuminate\\Notifications\\Notifiable;\nuse Illuminate\\Support\\Facades\\Auth;\nuse Laravel\\Passport\\HasApiTokens;\n\n/**\n * App\\User\n *\n * @property int $id\n * @property string $name\n * @property string $avatar\n * @property string $email\n * @property \\Illuminate\\Support\\Carbon|null $email_verified_at\n * @property string $password\n * @property string|null $remember_token\n * @property \\Illuminate\\Support\\Carbon|null $created_at\n * @property \\Illuminate\\Support\\Carbon|null $updated_at\n * @property-read \\Illuminate\\Database\\Eloquent\\Collection|\\App\\Chat[] $chats\n * @property-read int|null $chats_count\n * @property-read \\Illuminate\\Database\\Eloquent\\Collection|\\Laravel\\Passport\\Client[] $clients\n * @property-read int|null $clients_count\n * @property-read \\Illuminate\\Notifications\\DatabaseNotificationCollection|\\Illuminate\\Notifications\\DatabaseNotification[] $notifications\n * @property-read int|null $notifications_count\n * @property-read \\Illuminate\\Database\\Eloquent\\Collection|\\Laravel\\Passport\\Token[] $tokens\n * @property-read int|null $tokens_count\n * @method static \\Illuminate\\Database\\Eloquent\\Builder|\\App\\User newModelQuery()\n * @method static \\Illuminate\\Database\\Eloquent\\Builder|\\App\\User newQuery()\n * @method static \\Illuminate\\Database\\Eloquent\\Builder|\\App\\User query()\n * @method static \\Illuminate\\Database\\Eloquent\\Builder|\\App\\User whereAvatar($value)\n * @method static \\Illuminate\\Database\\Eloquent\\Builder|\\App\\User whereCreatedAt($value)\n * @method static \\Illuminate\\Database\\Eloquent\\Builder|\\App\\User whereEmail($value)\n * @method static \\Illuminate\\Database\\Eloquent\\Builder|\\App\\User whereEmailVerifiedAt($value)\n * @method static \\Illuminate\\Database\\Eloquent\\Builder|\\App\\User whereId($value)\n * @method static \\Illuminate\\Database\\Eloquent\\Builder|\\App\\User whereName($value)\n * @method static \\Illuminate\\Database\\Eloquent\\Builder|\\App\\User wherePassword($value)\n * @method static \\Illuminate\\Database\\Eloquent\\Builder|\\App\\User whereRememberToken($value)\n * @method static \\Illuminate\\Database\\Eloquent\\Builder|\\App\\User whereUpdatedAt($value)\n * @mixin \\Eloquent\n * @property string $status\n * @method static \\Illuminate\\Database\\Eloquent\\Builder|\\App\\User whereStatus($value)\n */\nclass User extends Authenticatable\n{\n    use Notifiable, HasApiTokens;\n\n    /**\n     * The attributes that are mass assignable.\n     *\n     * @var array\n     */\n    protected $fillable = [\n        'name', 'email', 'password', 'avatar',\n    ];\n\n    /**\n     * The attributes that should be hidden for arrays.\n     *\n     * @var array\n     */\n    protected $hidden = [\n        'password', 'remember_token', 'pivot'\n    ];\n\n    /**\n     * The attributes that should be cast to native types.\n     *\n     * @var array\n     */\n    protected $casts = [\n        'email_verified_at' => 'datetime',\n    ];\n\n    public function chats()\n    {\n        return $this->belongsToMany(Chat::class)->with( ['messages', 'users']);\n    }\n\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/User.php	(revision 603d0dabd51f604464d8c868d07dfd672e3f49d2)
++++ app/User.php	(date 1596022240000)
+@@ -42,6 +42,8 @@
+  * @method static \Illuminate\Database\Eloquent\Builder|\App\User whereUpdatedAt($value)
+  * @mixin \Eloquent
+  * @property string $status
++ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Contact[] $contacts
++ * @property-read int|null $contacts_count
+  * @method static \Illuminate\Database\Eloquent\Builder|\App\User whereStatus($value)
+  */
+ class User extends Authenticatable
+@@ -80,4 +82,21 @@
+         return $this->belongsToMany(Chat::class)->with( ['messages', 'users']);
+     }
+ 
++    public function contacts()
++    {
++        return $this->belongsToMany(User::class, 'contact_user', 'user_id', 'contact_id');
++    }
++
++
++    public function addFriend(User $user)
++    {
++        $this->contacts()->attach($user->id);
++    }
++
++    public function removeFriend(User $user)
++    {
++        $this->contacts()->detach($user->id);
++    }
++
++
+ }
+Index: database/migrations/2020_07_29_092622_create_contact_user_table.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- database/migrations/2020_07_29_092622_create_contact_user_table.php	(date 1596021297982)
++++ database/migrations/2020_07_29_092622_create_contact_user_table.php	(date 1596021297982)
+@@ -0,0 +1,32 @@
++<?php
++
++use Illuminate\Database\Migrations\Migration;
++use Illuminate\Database\Schema\Blueprint;
++use Illuminate\Support\Facades\Schema;
++
++class CreateContactUserTable extends Migration
++{
++    /**
++     * Run the migrations.
++     *
++     * @return void
++     */
++    public function up()
++    {
++        Schema::create('contact_user', function (Blueprint $table) {
++            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
++            $table->foreignId('contact_id')->references('id')->on('users')->cascadeOnDelete();
++            $table->primary(['user_id', 'contact_id']);
++        });
++    }
++
++    /**
++     * Reverse the migrations.
++     *
++     * @return void
++     */
++    public function down()
++    {
++        Schema::dropIfExists('contact_user');
++    }
++}
+Index: app/Http/Controllers/api/v1/ChatController.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?php\n\nnamespace App\\Http\\Controllers\\api\\v1;\n\nuse App\\Chat;\nuse App\\Events\\NewChat;\nuse App\\Http\\Controllers\\Controller;\nuse App\\Message;\nuse App\\User;\nuse Illuminate\\Http\\Request;\nuse Auth;\n\nclass ChatController extends Controller\n{\n    /**\n     * Display a listing of the resource.\n     *\n     *\n     *\n     * @return \\Illuminate\\Http\\JsonResponse with all user chats with first message of each chat\n     *\n     */\n    public function index()\n    {\n        $user = Auth::user();\n        $chats = $user->chats;\n        return response()->json($chats, 200);\n\n    }\n\n\n    /**\n     * Store a newly created resource in storage.\n     *\n     * @param \\Illuminate\\Http\\Request $request\n     * @return \\Illuminate\\Http\\JsonResponse\n     */\n    public function store(Request $request)\n    {\n        $chat = new Chat();\n        $chat->save();\n        $chat->users()->attach(User::find(Auth::id()));\n        $chat->users()->attach(User::find($request->user_id));\n\n//        Creating The First Message\n        $message = new Message();\n        $message->user_id = Auth::id();\n        $message->body = $request->message;\n        $message->chat_id = $chat->id;\n        $message->save();\n\n        $chat['messages'] = $chat->messages;\n        $chat['users'] = $chat->users;\n\n        broadcast(new NewChat($chat, $chat->users))->toOthers();\n        return response()->json($chat, 200);\n    }\n\n    /**\n     * Display the specified resource.\n     *\n     * @param int $id\n     * @return \\Illuminate\\Http\\JsonResponse\n     */\n    public function show($id)\n    {\n        $Chat = Chat::find($id)->first();\n        return response()->json([\"messages\" => $Chat->messages, \"users\" => $Chat->users], 200);\n    }\n\n    /**\n     * Update the specified resource in storage.\n     *\n     * @param \\Illuminate\\Http\\Request $request\n     * @param int $chat_id\n//     * @return\n     */\n    public function update($user_id, $chat_id)\n    {\n        $chat = Chat::find($chat_id);\n\n            User::where(\"id\", $user_id)\n                ->first()\n                ->chats()\n                ->attach($chat);\n\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     *\n     * @param int $id\n     * @return \\Illuminate\\Http\\JsonResponse\n     */\n    public function destroy($id)\n    {\n        Chat::destroy($id);\n        return response()->json(['message' => \"hi from the other side\"], 200);\n    }\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/Http/Controllers/api/v1/ChatController.php	(revision 603d0dabd51f604464d8c868d07dfd672e3f49d2)
++++ app/Http/Controllers/api/v1/ChatController.php	(date 1596021298018)
+@@ -3,6 +3,7 @@
+ namespace App\Http\Controllers\api\v1;
+ 
+ use App\Chat;
++use App\Contact;
+ use App\Events\NewChat;
+ use App\Http\Controllers\Controller;
+ use App\Message;
+@@ -37,12 +38,19 @@
+      */
+     public function store(Request $request)
+     {
++        // Add to Contacts Contacts
++        $user1 =User::find(Auth::id());
++        $user2= User::find($request->user_id);
++        $user1->addFriend($user2);
++        $user2->addFriend($user1);
++
++        // Creating New Chat
+         $chat = new Chat();
+         $chat->save();
+         $chat->users()->attach(User::find(Auth::id()));
+         $chat->users()->attach(User::find($request->user_id));
+ 
+-//        Creating The First Message
++        //Creating The First Message
+         $message = new Message();
+         $message->user_id = Auth::id();
+         $message->body = $request->message;
+Index: app/Http/Controllers/api/v1/LoginController.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?php\n\nnamespace App\\Http\\Controllers\\api\\v1;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\User;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\Support\\Facades\\Auth;\n\nclass LoginController extends Controller {\n  public function login(Request $request) {\n\n    $login = $request->validate([\n      'email' => 'required|string',\n      'password' => 'required|string',\n    ]);\n    if (!Auth::attempt($login)) {\n      return response()->json([\n        'message' => 'Email or Password are not correct!',\n      ], 401);\n    }\n\n    $user = Auth::user();\n\n    // Creating a token without scopes...\n    $token = $user->createToken('authToken')->accessToken;\n    $response = response()->json(['user' => Auth::user(), 'access_token' => $token], 200);\n\n    return $response;\n\n  }\n\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- app/Http/Controllers/api/v1/LoginController.php	(revision 603d0dabd51f604464d8c868d07dfd672e3f49d2)
++++ app/Http/Controllers/api/v1/LoginController.php	(date 1596021297982)
+@@ -24,7 +24,9 @@
+ 
+     // Creating a token without scopes...
+     $token = $user->createToken('authToken')->accessToken;
+-    $response = response()->json(['user' => Auth::user(), 'access_token' => $token], 200);
++    $user = User::find(Auth::id());
++    $user['contacts']=$user->contacts;
++    $response = response()->json(['user' => $user,'access_token' => $token], 200);
+ 
+     return $response;
+ 
+Index: _ide_helper_models.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- _ide_helper_models.php	(date 1596021297982)
++++ _ide_helper_models.php	(date 1596021297982)
+@@ -0,0 +1,126 @@
++<?php
++
++// @formatter:off
++/**
++ * A helper file for your Eloquent Models
++ * Copy the phpDocs from this file to the correct Model,
++ * And remove them from this file, to prevent double declarations.
++ *
++ * @author Barry vd. Heuvel <barryvdh@gmail.com>
++ */
++
++
++namespace App{
++/**
++ * App\User
++ *
++ * @property int $id
++ * @property string $name
++ * @property string $avatar
++ * @property string $email
++ * @property \Illuminate\Support\Carbon|null $email_verified_at
++ * @property string $password
++ * @property string|null $remember_token
++ * @property \Illuminate\Support\Carbon|null $created_at
++ * @property \Illuminate\Support\Carbon|null $updated_at
++ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Chat[] $chats
++ * @property-read int|null $chats_count
++ * @property-read \Illuminate\Database\Eloquent\Collection|\Laravel\Passport\Client[] $clients
++ * @property-read int|null $clients_count
++ * @property-read \Illuminate\Notifications\DatabaseNotificationCollection|\Illuminate\Notifications\DatabaseNotification[] $notifications
++ * @property-read int|null $notifications_count
++ * @property-read \Illuminate\Database\Eloquent\Collection|\Laravel\Passport\Token[] $tokens
++ * @property-read int|null $tokens_count
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\User newModelQuery()
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\User newQuery()
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\User query()
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\User whereAvatar($value)
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\User whereCreatedAt($value)
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\User whereEmail($value)
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\User whereEmailVerifiedAt($value)
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\User whereId($value)
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\User whereName($value)
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\User wherePassword($value)
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\User whereRememberToken($value)
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\User whereUpdatedAt($value)
++ * @mixin \Eloquent
++ * @property string $status
++ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Contact[] $contacts
++ * @property-read int|null $contacts_count
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\User whereStatus($value)
++ */
++	class User extends \Eloquent {}
++}
++
++namespace App{
++/**
++ * App\Chat
++ *
++ * @property int $id
++ * @property \Illuminate\Support\Carbon|null $created_at
++ * @property \Illuminate\Support\Carbon|null $updated_at
++ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Message[] $messages
++ * @property-read int|null $messages_count
++ * @property-read \Illuminate\Database\Eloquent\Collection|\App\User[] $users
++ * @property-read int|null $users_count
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\Chat newModelQuery()
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\Chat newQuery()
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\Chat query()
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\Chat whereCreatedAt($value)
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\Chat whereId($value)
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\Chat whereUpdatedAt($value)
++ * @mixin \Eloquent
++ */
++	class Chat extends \Eloquent {}
++}
++
++namespace App{
++/**
++ * App\Contact
++ *
++ * @property int $id
++ * @property string $name
++ * @property string $email
++ * @property string $status
++ * @property \Illuminate\Support\Carbon|null $created_at
++ * @property \Illuminate\Support\Carbon|null $updated_at
++ * @property-read \App\User $user
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\Contact newModelQuery()
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\Contact newQuery()
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\Contact query()
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\Contact whereCreatedAt($value)
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\Contact whereEmail($value)
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\Contact whereId($value)
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\Contact whereName($value)
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\Contact whereStatus($value)
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\Contact whereUpdatedAt($value)
++ */
++	class Contact extends \Eloquent {}
++}
++
++namespace App{
++/**
++ * App\Message
++ *
++ * @property int $id
++ * @property int $chat_id
++ * @property int $user_id
++ * @property string $body
++ * @property \Illuminate\Support\Carbon|null $created_at
++ * @property \Illuminate\Support\Carbon|null $updated_at
++ * @property-read \App\Chat $chat
++ * @property-read \App\User $user
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\Message newModelQuery()
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\Message newQuery()
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\Message query()
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\Message whereBody($value)
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\Message whereChatId($value)
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\Message whereCreatedAt($value)
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\Message whereId($value)
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\Message whereUpdatedAt($value)
++ * @method static \Illuminate\Database\Eloquent\Builder|\App\Message whereUserId($value)
++ * @mixin \Eloquent
++ */
++	class Message extends \Eloquent {}
++}
++
